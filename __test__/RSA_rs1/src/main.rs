@@ -1,6 +1,7 @@
+#![allow(unused)]
 use std::env;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::fs::{File, read_to_string};
+use std::io::{Result, BufRead, BufReader};
 
 #[inline]
 fn is_prime(n: u128) -> bool{
@@ -34,19 +35,14 @@ fn find_factor(n: u128)-> u128 {
     n
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2{
-        eprintln!("Ussage: factors <file>");
-        std::process::exit(1);
-
-    }
-    let file = File::open(&args[1]).expect("Error opening file");
-    let reader = BufReader::with_capacity(1024 * 1024, file); // 1MB buffer
-    reader.lines().for_each(|line| {
-        let n = line.unwrap().trim().parse().unwrap();
-        let p = find_factor(n);
-        let q  = n / p;
-        println!("{}={}*{}",n, p, q);
+fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    let content = std::fs::read_to_string(&args[1])?;
+    content.lines().into_iter().for_each(|line| {
+        let n = line.trim().parse().unwrap();
+        let p= find_factor(n);
+        let q = n / p;
+        println!("{}={}*{}", n, p, q);
     });
+    Ok(())
 }

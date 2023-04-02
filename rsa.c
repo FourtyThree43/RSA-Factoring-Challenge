@@ -13,19 +13,16 @@
  */
 bool is_prime(unsigned long long n)
 {
-	unsigned long long i = 3;
+	unsigned long long i;
 
-	if (n <= 1)
-		return (false);
-	else if (n <= 3)
+	if (n == 2 || n == 3)
 		return (true);
-	else if (n % 2 == 0 || n % 3 == 0)
+	else if (n <= 1 || n % 2 == 0 || n % 3 == 0)
 		return (false);
-	while (i * i <= n)
+	for (i = 5; i * i <= n; i += 6)
 	{
 		if (n % i == 0 || n % (i + 2) == 0)
 			return (false);
-		i += 6;
 	}
 	return (true);
 }
@@ -71,13 +68,13 @@ int main(int argc, char *argv[])
 
 	if (argc != 2)
 	{
-		fprintf(stderr, "Usage: factors <file>\n");
+		fprintf(stderr, "Usage: %s <file>\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	file = fopen(argv[1], "r");
 	if (!file)
 	{
-		fprintf(stderr, "Error opening file\n");
+		fprintf(stderr, "Cannot open file %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 	while ((read = getline(&line, &len, file)) != -1)

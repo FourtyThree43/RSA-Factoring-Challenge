@@ -1,0 +1,102 @@
+
+func trial_division1(n *big.Int) (*big.Int, *big.Int) {
+	p := big.NewInt(1)
+	q := big.NewInt(1)
+	d := big.NewInt(2)
+	for d.Mul(d, d).Cmp(n) <= 0 {
+		for n.Mod(n, d).Sign() == 0 {
+			if p.Cmp(q) <= 0 {
+				p.Mul(p, d)
+			} else {
+				q.Mul(q, d)
+			}
+			n.Div(n, d)
+		}
+		d.Add(d, big.NewInt(1))
+	}
+	if n.Cmp(big.NewInt(1)) > 0 {
+		if p.Cmp(q) <= 0 {
+			p.Mul(p, n)
+		} else {
+			q.Mul(q, n)
+		}
+	}
+	return p, q
+}
+
+func trial_division2(n *big.Int) (*big.Int, *big.Int) {
+	p := big.NewInt(1)
+	q := big.NewInt(1)
+	for n.Mod(n, big.NewInt(2)).Sign() == 0 {
+		p.Mul(p, big.NewInt(2))
+		n.Div(n, big.NewInt(2))
+	}
+	d := big.NewInt(3)
+	for d.Mul(d, d).Cmp(n) <= 0 {
+		for n.Mod(n, d).Sign() == 0 {
+			if p.Cmp(q) <= 0 {
+				p.Mul(p, d)
+			} else {
+				q.Mul(q, d)
+			}
+			n.Div(n, d)
+		}
+		d.Add(d, big.NewInt(2))
+	}
+	if n.Cmp(big.NewInt(1)) > 0 {
+		if p.Cmp(q) <= 0 {
+			p.Mul(p, n)
+		} else {
+			q.Mul(q, n)
+		}
+	}
+	return p, q
+}
+
+func trial_division3(n *big.Int) (*big.Int, *big.Int) {
+	two := big.NewInt(2)
+	three := big.NewInt(3)
+	five := big.NewInt(5)
+
+	// Factor out powers of 2
+	p := new(big.Int).Set(big.NewInt(1))
+	for n.Bit(0) == 0 {
+		p.Mul(p, two)
+		n.Rsh(n, 1)
+	}
+
+	// Factor out powers of 3
+	for n.Mod(n, three).Cmp(big.NewInt(0)) == 0 {
+		p.Mul(p, three)
+		n.Div(n, three)
+	}
+
+	// Factor out powers of 5
+	for n.Mod(n, five).Cmp(big.NewInt(0)) == 0 {
+		p.Mul(p, five)
+		n.Div(n, five)
+	}
+
+	// Iterate over remaining potential factors
+	var increments = []int{4, 2, 4, 2, 4, 6, 2, 6}
+	i := 0
+	for d := big.NewInt(7); d.Mul(d, d).Cmp(n) <= 0; {
+		for n.Mod(n, d).Cmp(big.NewInt(0)) == 0 {
+			p.Mul(p, d)
+			n.Div(n, d)
+		}
+		d.Add(d, big.NewInt(int64(increments[i])))
+		i++
+		if i == 8 {
+			i = 0
+		}
+	}
+
+	// Handle remaining factor
+	if n.Cmp(big.NewInt(1)) > 0 {
+		p.Mul(p, n)
+	}
+
+	q := new(big.Int).Div(n, p)
+	return p, q
+}

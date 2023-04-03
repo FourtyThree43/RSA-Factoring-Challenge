@@ -1,0 +1,187 @@
+
+func factorize_2(n *big.Int) (*big.Int, *big.Int) {
+	one := big.NewInt(1)
+	two := big.NewInt(2)
+	zero := big.NewInt(0)
+	sqrtN := new(big.Int).Sqrt(n)
+
+	for i := two; i.Cmp(sqrtN) <= 0; i.Add(i, one) {
+		if new(big.Int).Mod(n, i).Cmp(zero) == 0 {
+			return i, new(big.Int).Div(n, i)
+		}
+	}
+	return n, one
+}
+
+// factorize that uses precomplied primes to speed up the factorization process:
+func factorize_3(n *big.Int) (*big.Int, *big.Int) {
+	one := big.NewInt(1)
+	two := big.NewInt(2)
+	zero := big.NewInt(0)
+	primes := []int64{2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
+		71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157,
+		163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251,
+		257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353,
+		359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457,
+		461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571,
+		577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673,
+		677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797,
+		809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911,
+		919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997}
+	for _, p := range primes {
+		pBigInt := big.NewInt(p)
+		if new(big.Int).Mod(n, pBigInt).Cmp(zero) == 0 {
+			return pBigInt, new(big.Int).Div(n, pBigInt)
+		}
+	}
+	for i := new(big.Int).SetInt64(primes[len(primes)-1]); i.Cmp(n) < 0; i.Add(i, two) {
+		if new(big.Int).Mod(n, i).Cmp(zero) == 0 {
+			return i, new(big.Int).Div(n, i)
+		}
+	}
+	return n, one
+}
+
+// factorize that uses both the Miller-Rabin primality test and
+// a sieve algorithm to speed up the factorization process:
+func factorize_4(n *big.Int) (*big.Int, *big.Int) {
+	one := big.NewInt(1)
+	two := big.NewInt(2)
+	zero := big.NewInt(0)
+
+	// Check if n is even
+	if new(big.Int).Mod(n, two).Cmp(zero) == 0 {
+		return two, new(big.Int).Div(n, two)
+	}
+
+	// Check if n is a prime using Miller-Rabin primality test
+	if n.ProbablyPrime(10) {
+		return n, one
+	}
+
+	// Use a sieve algorithm to generate a list of primes up to sqrt(n)
+	sqrtN := new(big.Int).Sqrt(n)
+	sqrtNInt := sqrtN.Int64()
+	sieve := make([]bool, sqrtNInt+1)
+	primes := make([]int64, 0)
+	for i := int64(2); i <= sqrtNInt; i++ {
+		if !sieve[i] {
+			primes = append(primes, i)
+			for j := i * i; j <= sqrtNInt; j += i {
+				sieve[j] = true
+			}
+		}
+	}
+
+	// Try dividing n by each prime in the list
+	for _, p := range primes {
+		pBigInt := big.NewInt(p)
+		if new(big.Int).Mod(n, pBigInt).Cmp(zero) == 0 {
+			return pBigInt, new(big.Int).Div(n, pBigInt)
+		}
+	}
+
+	// If n is not divisible by any prime up to sqrt(n), then n must be prime
+	return n, one
+}
+
+// uses a segmented sieve algorithm
+func factorize_5(n *big.Int) (*big.Int, *big.Int) {
+	one := big.NewInt(1)
+	two := big.NewInt(2)
+	zero := big.NewInt(0)
+
+	// Check if n is even
+	if new(big.Int).Mod(n, two).Cmp(zero) == 0 {
+		return two, new(big.Int).Div(n, two)
+	}
+
+	// Check if n is a prime using Miller-Rabin primality test
+	if n.ProbablyPrime(10) {
+		return n, one
+	}
+
+	// Use a segmented sieve algorithm to generate a list of primes
+	maxPrime := int64(100000) // set maximum prime to 100000
+	primes := make([]int64, 0)
+	isPrime := make([]bool, maxPrime+1)
+	for i := int64(2); i <= maxPrime; i++ {
+		if !isPrime[i] {
+			primes = append(primes, i)
+			for j := i * i; j <= maxPrime; j += i {
+				isPrime[j] = true
+			}
+		}
+	}
+	sqrtN := new(big.Int).Sqrt(n)
+	sqrtNInt := sqrtN.Int64()
+	for low := int64(maxPrime + 1); low < sqrtNInt; low += maxPrime {
+		high := low + maxPrime - 1
+		if high > sqrtNInt {
+			high = sqrtNInt
+		}
+		sieve := make([]bool, maxPrime)
+		for _, p := range primes {
+			if p*p > high {
+				break
+			}
+			start := (low + p - 1) / p
+			if start < 2 {
+				start = 2
+			}
+			j := start*p - low
+			if j < 0 {
+				j += p
+			}
+			for ; j < maxPrime; j += p {
+				sieve[j] = true
+			}
+		}
+		for i := int64(0); i < maxPrime && low+i <= sqrtNInt; i++ {
+			if !sieve[i] && new(big.Int).Mod(n, big.NewInt(low+i)).Cmp(zero) == 0 {
+				return big.NewInt(low + i), new(big.Int).Div(n, big.NewInt(low+i))
+			}
+		}
+	}
+
+	// If n is not divisible by any prime up to sqrt(n), then n must be prime
+	return n, one
+}
+
+func factorize_6(n *big.Int) (*big.Int, *big.Int) {
+	zero := big.NewInt(0)
+	one := big.NewInt(1)
+	two := big.NewInt(2)
+
+	// Check if n is even
+	if new(big.Int).Mod(n, two).Cmp(zero) == 0 {
+		return two, new(big.Int).Div(n, two)
+	}
+
+	// Use a slice of precomputed primes up to a certain limit
+	limit := 1000000
+	primes := make([]int64, 0, limit)
+	for i := int64(2); len(primes) < limit; i++ {
+		prime := true
+		for _, p := range primes {
+			if i%p == 0 {
+				prime = false
+				break
+			}
+		}
+		if prime {
+			primes = append(primes, i)
+		}
+	}
+
+	// Test if n is divisible by any of the precomputed primes
+	for _, p := range primes {
+		pBigInt := big.NewInt(p)
+		if new(big.Int).Mod(n, pBigInt).Cmp(zero) == 0 {
+			return pBigInt, new(big.Int).Div(n, pBigInt)
+		}
+	}
+
+	// If n is not divisible by any precomputed primes, then it must be a large prime
+	return n, one
+}

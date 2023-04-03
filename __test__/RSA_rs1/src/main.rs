@@ -5,19 +5,17 @@ use std::io::{Result, BufRead, BufReader};
 
 #[inline]
 fn is_prime(n: u128) -> bool{
-    if n <= 1{
-        false
-    }else if n <= 3{
-        true
-    }else if n % 2 == 0 || n % 3 == 0 {
+    if n == 2 || n == 3{
+        return true;
+    }else if n <= 1 || n % 2 == 0 || n % 3 == 0 {
         false
     }else {
-        let mut i =3;
-        while i * i <= n{
+        let mut i = 5;
+        while i * i <= n {
             if n % i == 0 || n % (i + 2) == 0 {
                 return false;
             }
-            i += 6;
+            i += 6
         }
         true
     }

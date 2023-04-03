@@ -2,10 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <stdint.h>
-#include <inttypes.h>
 #include <math.h>
-#define BUFSIZE 256
 
 /**
  * is_prime - Function that checks whether a number is prime.
@@ -13,15 +10,10 @@
  *
  * Return: True if the number is prime,
  *          false otherwise.
- *
- * Description: Primality test used is trial division: given a number, n,
- * check whether it is evenly divisible by any prime number between 2 and √n
- * (i.e. that the division leaves no remainder). If so, then n is composite.
- * Otherwise, it is prime.[1]
  */
-bool is_prime(uint64_t n)
+bool is_prime(unsigned long long n)
 {
-	uint64_t i;
+	unsigned long long i;
 
 	if (n == 2 || n == 3)
 		return (true);
@@ -43,13 +35,11 @@ bool is_prime(uint64_t n)
  * Return: The smallest prime factor of the number,
  *          or the number itself if it is prime.
  */
-uint64_t find_factor(uint64_t n)
+unsigned long long find_factor(unsigned long long n)
 {
-	uint64_t sqrt_n = sqrt(n);
-	uint64_t factor = 2;
+	unsigned long long sqrt_n = sqrt(n);
+	unsigned long long factor = 2;
 
-	if (n <= 1)
-		return (n);
 	while (factor <= sqrt_n)
 	{
 		if (n % factor == 0 && is_prime(factor))
@@ -70,9 +60,11 @@ uint64_t find_factor(uint64_t n)
  */
 int main(int argc, char *argv[])
 {
-	uint64_t n, p, q;
+	unsigned long long n, p, q;
 	FILE *file;
-	char buf[BUFSIZE];
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read;
 
 	if (argc != 2)
 	{
@@ -85,13 +77,14 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Cannot open file %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
-	while (fgets(buf, BUFSIZE, file) != NULL)
+	while ((read = getline(&line, &len, file)) != -1)
 	{
-		n = strtoull(buf, NULL, 10);
+		n = strtoull(line, NULL, 10);
 		p = find_factor(n);
 		q = n / p;
-		printf("%llu=%llu*%llu\tL:%d\n", n, p, q, __LINE__);
+		printf("%llu=%llu*%llu\n", n, p, q);
 	}
+	free(line);
 	fclose(file);
 	return (0);
 }

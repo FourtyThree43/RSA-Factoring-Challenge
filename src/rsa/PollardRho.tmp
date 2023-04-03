@@ -1,0 +1,35 @@
+
+func PollardRho(n *big.Int) (*big.Int, *big.Int) {
+	one := big.NewInt(1)
+	if n.Cmp(one) == 0 {
+		return one, one
+	}
+
+	// random number generator
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	// initialize variables
+	x := new(big.Int).Rand(rand, new(big.Int).Sub(n, one))
+	y := new(big.Int).Set(x)
+	c := new(big.Int).Rand(rand, new(big.Int).Sub(n, one))
+	f := func(x *big.Int) *big.Int {
+		x2 := new(big.Int).Mul(x, x)
+		x2.Add(x2, c)
+		return new(big.Int).Mod(x2, n)
+	}
+
+	// Pollard's rho algorithm
+	for {
+		x = f(x)
+		y = f(f(y))
+		d := gcd(new(big.Int).Sub(x, y), n)
+		if d.Cmp(one) == 0 {
+			continue
+		}
+		p := d
+		q := new(big.Int).Div(n, p)
+		if p.ProbablyPrime(10) && q.ProbablyPrime(10) {
+			return p, q
+		}
+	}
+}

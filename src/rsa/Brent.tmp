@@ -1,0 +1,152 @@
+func gcd(a, b *big.Int) *big.Int {
+	if b.Cmp(big.NewInt(0)) == 0 {
+		return a
+	}
+	return gcd(b, new(big.Int).Mod(a, b))
+}
+
+func Brent(n *big.Int) *big.Int {
+	two := big.NewInt(2)
+	if n.Mod(n, two).Cmp(big.NewInt(0)) == 0 {
+		return two
+	}
+
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	y := new(big.Int).Add(new(big.Int).Rand(rand, new(big.Int).Sub(n, two)), two)
+	c := new(big.Int).Add(new(big.Int).Rand(rand, new(big.Int).Sub(n, two)), two)
+	m := rand.Intn(100) + 1
+	g, r, q := big.NewInt(1), big.NewInt(1), big.NewInt(1)
+	x, ys := new(big.Int), new(big.Int)
+
+	f := func(x, c, n *big.Int) *big.Int {
+		x2 := new(big.Int).Mul(x, x)
+		x2.Add(x2, c)
+		return new(big.Int).Mod(x2, n)
+	}
+
+	for g.Cmp(big.NewInt(1)) == 0 {
+		x.Set(y)
+		for i := big.NewInt(0); i.Cmp(r) < 0; i.Add(i, big.NewInt(1)) {
+			y = f(x, c, n)
+		}
+
+		k := big.NewInt(0)
+		for k.Cmp(r) < 0 && g.Cmp(big.NewInt(1)) == 0 {
+			ys.Set(y)
+			for i := big.NewInt(0); i.Cmp(big.NewInt(int64(min(m, int(r.Int64()-k.Int64()))))) < 0; i.Add(i, big.NewInt(1)) {
+				y = f(y, c, n)
+				q.Mul(q, new(big.Int).Abs(new(big.Int).Sub(x, y)))
+				q.Mod(q, n)
+			}
+
+			g = gcd(q, n)
+			k.Add(k, big.NewInt(int64(m)))
+		}
+
+		r.Mul(r, two)
+	}
+
+	if g.Cmp(n) == 0 {
+		for g.Cmp(n) == 0 {
+			ys = f(ys, c, n)
+			g = gcd(new(big.Int).Abs(new(big.Int).Sub(x, ys)), n)
+		}
+	}
+
+	return g
+}
+
+func factorize(n *big.Int) []*big.Int {
+	one := big.NewInt(1)
+	two := big.NewInt(2)
+	if n.Cmp(one) <= 0 {
+		return []*big.Int{}
+	}
+
+	res := []*big.Int{}
+	for n.Mod(n, two).Cmp(big.NewInt(0)) == 0 {
+		res = append(res, two)
+		n.Div(n, two)
+	}
+
+	for n.Cmp(one) > 0 {
+		if isPrime(n) {
+			res = append(res, n)
+			break
+		}
+
+		x := Brent(n)
+		res = append(res, factorize(x)...)
+		n.Div(n, x)
+	}
+
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Cmp(res[j]) < 0
+	})
+
+	return res
+}
+
+func isPrime(n *big.Int) bool {
+	zero := big.NewInt(0)
+	one := big.NewInt(1)
+	two := big.NewInt(2)
+	three := big.NewInt(3)
+	if n.Cmp(one) <= 0 {
+		return false
+	}
+
+	if n.Cmp(three) <= 0 {
+		return true
+	}
+
+	if new(big.Int).Mod(n, two).Cmp(zero) == 0 || new(big.Int).Mod(n, three).Cmp(zero) == 0 {
+		return false
+	}
+
+	i := big.NewInt(5)
+	w := big.NewInt(2)
+	for i.Mul(i, i).Cmp(n) <= 0 {
+		if new(big.Int).Mod(n, i).Cmp(zero) == 0 {
+			return false
+		}
+		i.Add(i, w)
+		w = sixOrTwo(w)
+	}
+
+	return true
+}
+
+func sixOrTwo(w *big.Int) *big.Int {
+	two := big.NewInt(2)
+	if w.Cmp(two) == 0 {
+		return big.NewInt(4)
+	}
+	return two
+}
+
+func factorize(n *big.Int) []*big.Int {
+	zero := big.NewInt(0)
+	one := big.NewInt(1)
+	if n.Cmp(one) <= 0 {
+		return []*big.Int{}
+	}
+	res := []*big.Int{}
+	two := big.NewInt(2)
+	for new(big.Int).Mod(n, two).Cmp(zero) == 0 {
+		res = append(res, two)
+		n.Div(n, two)
+	}
+
+	if n.Cmp(one) == 0 {
+		return res
+	}
+
+	for isPrime(n) == false {
+		x := Brent(n)
+		res = append(res, factorize(x)...)
+		n.Div(n, x)
+	}
+
+	return append(res, n)
+}
